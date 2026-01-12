@@ -1,0 +1,1611 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Stock · Simple & Operativo</title>
+<style>
+  :root{
+    --bg:#f4f6f9;
+    --panel:#ffffff;
+    --panel2:#f1f4f8;
+    --text:#0b1220;
+    --muted:rgba(11,18,32,.62);
+    --line:rgba(11,18,32,.12);
+    --accent:#0d47a1;
+    --good:#15803d;
+    --bad:#b91c1c;
+    --radius:16px;
+    --shadow:0 10px 22px rgba(11,18,32,.10);
+    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family:var(--sans);
+    background:radial-gradient(900px 500px at 15% 0%, rgba(255,193,7,.12), transparent 55%),
+               radial-gradient(900px 500px at 85% 0%, rgba(79,70,229,.10), transparent 55%),
+               var(--bg);
+    color:var(--text);
+  }
+  .wrap{max-width:1100px;margin:0 auto;padding:14px 14px 28px}
+  /* Topbar (compact) */
+  .topbar{
+    position:sticky; top:0; z-index:10;
+    background:linear-gradient(to bottom, rgba(11,15,20,.92), rgba(11,15,20,.62));
+    backdrop-filter: blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .topbar .inner{max-width:1100px;margin:0 auto;padding:10px 14px;display:flex;gap:10px;align-items:center}
+  .brand{display:flex;align-items:baseline;gap:10px;min-width:190px}
+  .brand .t{font-weight:800;letter-spacing:.2px}
+  .brand .sub{font-size:12px;color:var(--muted)}
+  .pill{
+    font-family:var(--mono);
+    font-size:12px;
+    padding:6px 10px;
+    border:1px solid var(--line);
+    background:rgba(255,255,255,.02);
+    border-radius:999px;
+    color:var(--muted);
+    white-space:nowrap;
+  }
+  .actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  button, .btn{
+    cursor:pointer;
+    border:1px solid var(--line);
+    background:rgba(255,255,255,.03);
+    color:var(--text);
+    border-radius:12px;
+    padding:8px 10px;
+    font-weight:700;
+    font-size:13px;
+  }
+  button:hover{border-color:rgba(255,255,255,.22);background:rgba(255,255,255,.05)}
+  .btn-accent{
+    border-color:rgba(255,193,7,.35);
+    background:rgba(255,193,7,.10);
+  }
+  .btn-accent:hover{background:rgba(255,193,7,.14)}
+  .btn-ghost{background:transparent}
+  .btn-danger{border-color:rgba(251,113,133,.35);background:rgba(251,113,133,.10)}
+  .btn-danger:hover{background:rgba(251,113,133,.14)}
+  .btn-icon{
+    width:40px;height:38px;padding:0;display:grid;place-items:center;
+    font-size:18px;font-weight:900;border-radius:12px;
+  }
+
+  /* Layout */
+  .grid{
+    display:grid;
+    grid-template-columns: 1.55fr .95fr;
+    gap:14px;
+    margin-top:14px;
+  }
+  @media (max-width: 980px){
+    .grid{grid-template-columns:1fr}
+    .brand{min-width:auto}
+  }
+  .card{
+    background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.02));
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    overflow:hidden;
+  }
+  .card .hd{
+    padding:12px 12px;
+    display:flex;align-items:center;gap:10px;
+    border-bottom:1px solid var(--line);
+    background:rgba(255,255,255,.02);
+  }
+  .card .hd h2{margin:0;font-size:14px;letter-spacing:.2px}
+  .card .bd{padding:12px}
+  .grow{flex:1}
+  .muted{color:var(--muted)}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .search{
+    flex:1;
+    min-width:220px;
+    display:flex;align-items:center;gap:8px;
+    border:1px solid var(--line);
+    background:rgba(0,0,0,.18);
+    border-radius:12px;
+    padding:8px 10px;
+  }
+  .search input{
+    width:100%;
+    background:transparent;border:0;outline:0;color:var(--text);
+    font-size:14px;
+  }
+  .search .k{font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .small{font-size:12px}
+  .sep{height:1px;background:var(--line);margin:10px 0}
+
+  /* Product list */
+  .list{display:flex;flex-direction:column;gap:10px}
+  .item{
+    border:1px solid var(--line);
+    background:rgba(0,0,0,.12);
+    border-radius:14px;
+    padding:10px;
+    display:grid;
+    grid-template-columns: 1fr auto;
+    gap:10px;
+    align-items:center;
+  }
+  .item:hover{border-color:rgba(255,255,255,.22);background:rgba(0,0,0,.16)}
+  .name{font-weight:800}
+  .meta{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .stock{
+    font-family:var(--mono);
+    font-weight:900;
+    font-size:22px;
+    padding:4px 10px;
+    border-radius:12px;
+    border:1px solid var(--line);
+    background:rgba(255,255,255,.03);
+    min-width:84px;
+    text-align:center;
+  }
+  .stock.good{border-color:rgba(74,222,128,.32);background:rgba(74,222,128,.09)}
+  .stock.bad{border-color:rgba(251,113,133,.32);background:rgba(251,113,133,.09)}
+  .itemActions{display:flex;gap:8px;align-items:center;justify-content:flex-end}
+  .kebab{
+    width:38px;height:38px;border-radius:12px;
+    display:grid;place-items:center;
+    font-size:18px;
+  }
+  .chip{
+    font-family:var(--mono);
+    font-size:12px;
+    padding:4px 8px;
+    border:1px solid var(--line);
+    border-radius:999px;
+    color:var(--muted);
+    background:rgba(255,255,255,.02);
+  }
+
+  /* Movements */
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:12px;color:var(--muted);text-align:left;font-weight:800}
+  td{font-size:13px}
+  .delta{
+    font-family:var(--mono);font-weight:900;
+    display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid var(--line);
+    background:rgba(255,255,255,.03);
+  }
+  .delta.pos{border-color:rgba(74,222,128,.32);background:rgba(74,222,128,.09)}
+  .delta.neg{border-color:rgba(251,113,133,.32);background:rgba(251,113,133,.09)}
+  .mono{font-family:var(--mono)}
+  .nowrap{white-space:nowrap}
+  .empty{
+    padding:14px;border:1px dashed rgba(234,240,255,.22);
+    border-radius:14px;color:var(--muted);background:rgba(0,0,0,.12);
+  }
+
+
+  .select{
+    background:rgba(255,255,255,.05);
+    border:1px solid var(--line);
+    color:var(--text);
+    border-radius:12px;
+    padding:10px 10px;
+    font-size:14px;
+    outline:0;
+    min-width:190px;
+  }
+  .tag{
+    display:inline-flex;align-items:center;gap:6px;
+    border:1px solid var(--line);
+    background:rgba(255,255,255,.04);
+    padding:6px 10px;border-radius:999px;
+    font-size:12px;color:var(--muted);
+  }
+
+  /* Modal */
+  .backdrop{
+    position:fixed;inset:0;display:none;
+    background:rgba(0,0,0,.55);
+    backdrop-filter: blur(6px);
+    z-index:50;
+    padding:18px;
+  }
+  .modal{
+    max-width:520px;margin:8vh auto 0;
+    border:1px solid var(--line);
+  background:var(--panel);
+    color:var(--text);
+    border-radius:18px;
+    box-shadow:0 26px 80px rgba(0,0,0,.55);
+    overflow:hidden;
+  }
+  .modal .mhd{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center}
+  .modal .mhd .title{font-weight:900}
+  .modal .mbd{padding:14px}
+  .modal label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
+  .qty{
+    display:flex;gap:10px;align-items:center
+  }
+  .qty input{
+    width:100%;
+    background:var(--panel2);
+    border:1px solid var(--line);
+    color:var(--text);
+    border-radius:14px;
+    padding:14px 14px;
+    font-size:34px;
+    font-weight:900;
+    font-family:var(--mono);
+    outline:0;
+    text-align:center;
+  }
+  .qty .hint{font-size:12px;color:var(--muted)}
+  .modal textarea{
+    width:100%;
+    min-height:72px;
+    resize:vertical;
+    background:rgba(0,0,0,.20);
+    border:1px solid var(--line);
+    color:var(--text);
+    border-radius:14px;
+    padding:10px 12px;
+    outline:0;
+    font-size:14px;
+  }
+  .mft{
+    padding:12px 14px;
+    border-top:1px solid var(--line);
+    display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;
+    background:rgba(255,255,255,.02);
+  }
+  .kbd{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--muted);
+    border:1px solid var(--line);
+    background:rgba(255,255,255,.02);
+    padding:4px 8px;border-radius:10px;
+  }
+
+  /* Tiny menu */
+  .menu{
+    position:fixed;
+    display:none;
+    z-index:60;
+    min-width:190px;
+    border:1px solid var(--line);
+    background:rgba(15,22,33,.98);
+    border-radius:14px;
+    box-shadow:0 22px 60px rgba(0,0,0,.55);
+    overflow:hidden;
+  }
+  .menu button{
+    width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);
+    background:transparent;border-radius:0;padding:10px 12px;font-weight:800
+  }
+  .menu button:last-child{border-bottom:0}
+  .menu button:hover{background:rgba(255,255,255,.05)}
+
+  /* QUIROGA CORPORATIVO */
+  body{ background: linear-gradient(180deg, #eef2f7 0%, var(--bg) 40%, var(--bg) 100%); }
+  .topbar{
+    background: linear-gradient(180deg, #0b2f6a 0%, #0d47a1 100%);
+    border-bottom: 1px solid rgba(255,255,255,.18);
+  }
+  .topbar .brand .t{ color:#fff; letter-spacing:.6px; }
+  .topbar .brand .sub{ color:rgba(255,255,255,.78); }
+  .pill{ background: rgba(255,255,255,.14); color:#fff; border-color: rgba(255,255,255,.18); }
+  .btn{ background: #fff; color:#0b1220; border-color: rgba(11,18,32,.14); }
+  .btn:hover{ transform: translateY(-1px); }
+  .btn-accent{ background: #ffd54f; color:#0b1220; border-color: rgba(11,18,32,.16); }
+  .btn-danger{ background:#fee2e2; color:#7f1d1d; border-color: rgba(185,28,28,.25); }
+  .card{ border: 1px solid rgba(11,18,32,.10); }
+  .table th{ color: rgba(11,18,32,.70); }
+  .kbd{ background: rgba(11,18,32,.06); border-color: rgba(11,18,32,.14); color: rgba(11,18,32,.80); }
+
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="inner">
+    <div class="brand">
+      <div class="t">STOCK QUIROGA GNC</div>
+      <div class="sub">Control de stock operativo</div>
+    </div>
+    <div class="pill" id="pillTotals">0 productos · 0 mov.</div>
+    <div class="actions">
+      <button class="btn-accent" id="btnAdd">+ Producto</button>
+      <button id="btnImport" class="btn">Importar CSV</button>
+      <button id="btnExportStock" class="btn">Export Stock CSV</button>
+      <button id="btnExportMoves" class="btn">Export Movimientos CSV</button>
+      <button id="btnReset" class="btn-danger">Reset</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="grid">
+    <!-- Productos -->
+    <section class="card">
+      <div class="hd">
+        <h2>Productos</h2>
+        <div class="grow"></div>
+        <div class="chip" id="chipHint">Enter confirma · Esc cierra</div>
+      </div>
+      <div class="bd">
+        <div class="row">
+          <div class="search">
+            <span class="k">🔎</span>
+            <input id="q" placeholder="Buscar producto..." autocomplete="off" />
+            <span class="k">Ctrl+K</span>
+          </div>
+          <select id="catFilter" class="select" title="Filtrar por categoría"></select>
+          <button id="btnCats" class="btn ghost" type="button" title="Crear/editar categorías">Categorías</button>
+          <span class="pill" id="pillCount">0</span>
+        </div>
+
+        <div class="sep"></div>
+
+        <div id="list" class="list"></div>
+        <div id="emptyProducts" class="empty" style="display:none">
+          No hay productos. Tocá <b>+ Producto</b>.
+        </div>
+      </div>
+    </section>
+
+    <!-- Movimientos -->
+    <aside class="card">
+      <div class="hd">
+        <h2>Últimos movimientos</h2>
+        <div class="grow"></div>
+        <span class="pill" id="pillMoves">0</span>
+      </div>
+      <div class="bd" style="padding:0">
+        <div style="padding:12px 12px 0" class="row">
+          <div class="search" style="flex:1;min-width:0">
+            <span class="k">⌕</span>
+            <input id="mq" placeholder="Filtrar movimientos..." autocomplete="off" />
+          </div>
+        </div>
+        <div style="padding:8px 12px 12px" class="row small muted">
+          Se guarda: fecha/hora · tipo · cantidad · antes→después · nota
+        </div>
+
+        <div style="overflow:auto;max-height:72vh">
+          <table>
+            <thead>
+              <tr>
+                <th class="nowrap">Fecha</th>
+                <th>Producto</th>
+                <th class="nowrap">Δ</th>
+                <th class="nowrap">Antes→Después</th>
+              </tr>
+            </thead>
+            <tbody id="movesTbody"></tbody>
+          </table>
+          <div id="emptyMoves" class="empty" style="margin:12px;display:none">
+            Sin movimientos todavía.
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- Adjust Modal -->
+<div class="backdrop" id="backdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <div class="mhd">
+      <div class="title" id="mTitle">Movimiento</div>
+      <div class="grow"></div>
+      <span class="kbd">ESC</span>
+    </div>
+    <div class="mbd">
+      <div class="muted small" id="mSub">—</div>
+
+      <label for="mQty">Cantidad</label>
+      <div class="qty">
+        <input id="mQty" inputmode="numeric" pattern="[0-9]*" placeholder="0" />
+      </div>
+      <div class="row small muted" style="margin-top:8px">
+        <span class="kbd">ENTER</span> Confirmar
+        <span class="kbd">ESC</span> Cancelar
+      </div>
+
+      <label for="mNote">Nota (opcional)</label>
+      <textarea id="mNote" placeholder="Ej: compra, devolución, merma, ajuste..."></textarea>
+    </div>
+    <div class="mft">
+      <button class="btn-ghost" id="btnCancel">Cancelar</button>
+      <button class="btn-accent" id="btnConfirm">Confirmar</button>
+    </div>
+  
+</div>
+</div>
+
+<!-- Producto: Alta / Edición -->
+<div class="backdrop" id="backdropProd" aria-hidden="true" style="display:none">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pTitle">
+    <div class="mhd">
+      <div class="title" id="pTitle">Producto</div>
+      <div class="grow"></div>
+      <span class="kbd">ESC</span>
+    </div>
+    <div class="mbd">
+      <div class="muted small" id="pSub">—</div>
+
+      <label for="pName">Nombre</label>
+      <input id="pName" placeholder="Ej: Lavandina 5L" />
+
+      <label for="pCat" style="margin-top:10px">Categoría</label>
+      <input id="pCat" list="catList" placeholder="Ej: Limpieza" />
+      <datalist id="catList"></datalist>
+
+      <div id="pStockWrap" style="margin-top:10px">
+        <label for="pStock">Stock inicial</label>
+        <input id="pStock" inputmode="numeric" pattern="[0-9]*" placeholder="0" />
+      </div>
+
+      <div class="muted small" style="margin-top:10px">Enter confirma · Esc cierra</div>
+    </div>
+    <div class="mft">
+      <button class="btn-ghost" id="pCancel">Cancelar</button>
+      <button class="btn-accent" id="pConfirm">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit product (simple prompt modal) -->
+
+<input type="file" id="fileImport" accept=".csv,text/csv" style="display:none" />
+
+<!-- Context menu -->
+<div class="menu" id="menu">
+  <button id="miEdit">Editar</button>
+  <button id="miDelete" class="btn-danger">Eliminar producto</button>
+</div>
+
+
+  <!-- MODAL: Categorías -->
+  <div class="backdrop" id="backdropCats" aria-hidden="true" style="display:none">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cTitle">
+      <div class="mhd">
+        <div>
+          <div class="mtitle" id="cTitle">Categorías</div>
+          <div class="muted small">Creá, renombrá o eliminá categorías. “Sin categoría” siempre existe.</div>
+        </div>
+        <button class="x" id="cClose" aria-label="Cerrar">✕</button>
+      </div>
+
+      <div class="mbd">
+        <div class="row" style="gap:10px; align-items:flex-end">
+          <div style="flex:1">
+            <label for="cNew">Nueva categoría</label>
+            <input id="cNew" placeholder="Ej: Limpieza" autocomplete="off" />
+          </div>
+          <button class="btn" id="cAdd" type="button">Agregar</button>
+        </div>
+
+        <div class="sep" style="margin:14px 0"></div>
+
+        <div class="muted small" style="margin-bottom:8px">Tus categorías</div>
+        <div id="cList" class="list" style="max-height:46vh; overflow:auto"></div>
+      </div>
+
+      <div class="mft">
+        <button class="btn ghost" id="cCancel" type="button">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+
+<!-- Firebase Realtime (30 días de prueba: reglas abiertas por fecha en consola) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+
+<script>
+(() => {
+  "use strict";
+
+
+// =========================
+// Firebase Realtime Database
+// =========================
+// IMPORTANTE: Para que funcione "abierto 30 días", pegá estas Rules en Realtime DB:
+// {
+//   "rules": { "apps": { "stock_quiroga_gnc": { ".read": "now < 1770778800000", ".write": "now < 1770778800000" } } }
+// }
+// (sin comentarios y sin coma final en la consola)
+const CLOUD = {
+  enabled: true,
+  appPath: "apps/stock_quiroga_gnc",
+  // Si tu RTDB no es default-rtdb, cambiá la URL por la exacta que te muestre Firebase.
+  config: {
+    apiKey: "AIzaSyCrsTFJYNIYzaPTindRgHeMp8rpMHSnrRc",
+    authDomain: "stockcardenal.firebaseapp.com",
+    databaseURL: "https://stockcardenal-default-rtdb.firebaseio.com",
+    projectId: "stockcardenal",
+    storageBucket: "stockcardenal.firebasestorage.app",
+    messagingSenderId: "1038559867472",
+    appId: "1:1038559867472:web:4f6c3c6158e9484bbe1755"
+  }
+};
+
+let cloudDb = null;
+let cloudReady = false;
+let suppressCloudSave = false;
+let cloudSaveTimer = null;
+
+function initCloud(){
+  if(!CLOUD.enabled) return;
+  if(!window.firebase || !firebase.initializeApp || !firebase.database){
+    console.warn("Firebase no cargó. Se usa modo local.");
+    return;
+  }
+  try{
+    firebase.initializeApp(CLOUD.config);
+    cloudDb = firebase.database();
+    attachCloudListeners();
+  } catch(err){
+    console.warn("Firebase init falló. Se usa modo local.", err);
+    cloudDb = null;
+  }
+}
+
+function attachCloudListeners(){
+  const base = cloudDb.ref(CLOUD.appPath);
+
+  base.child("products").on("value", (snap)=>{
+    const val = snap.val();
+    suppressCloudSave = true;
+    try{
+      if(val && typeof val === "object"){
+        products = Object.values(val);
+      } else {
+        products = [];
+      }
+      // sanitize
+      products = Array.isArray(products) ? products : [];
+      for(const p of products){
+        if(!p.id) p.id = uid();
+        if(!("category" in p)) p.category = "Sin categoría";
+        p.category = normCat(p.category);
+      }
+      renderAll();
+    } finally {
+      suppressCloudSave = false;
+    }
+    cloudReady = true;
+    // si la nube está vacía, sembrar la carga inicial
+    if(!val || (typeof val === "object" && Object.keys(val).length === 0)){
+      seedCloudIfEmpty();
+    }
+  });
+
+  base.child("moves").limitToLast(1000).on("value", (snap)=>{
+    const val = snap.val();
+    suppressCloudSave = true;
+    try{
+      if(val && typeof val === "object"){
+        moves = Object.values(val).sort((a,b)=> (a.ts||0)-(b.ts||0));
+      } else {
+        moves = [];
+      }
+      moves = Array.isArray(moves) ? moves : [];
+      renderMoves();
+      totals();
+    } finally {
+      suppressCloudSave = false;
+    }
+    cloudReady = true;
+  });
+
+  base.child("cats").on("value", (snap)=>{
+    const val = snap.val();
+    suppressCloudSave = true;
+    try{
+      if(val && typeof val === "object"){
+        userCats = Object.keys(val).filter(k=>k && k !== "Sin categoría");
+      } else {
+        userCats = [];
+      }
+      refreshCategoryUI();
+    } finally {
+      suppressCloudSave = false;
+    }
+    cloudReady = true;
+  });
+}
+
+function seedCloudIfEmpty(){
+  if(!cloudDb) return;
+  const base = cloudDb.ref(CLOUD.appPath);
+  // sembrar solo si está realmente vacío (doble check)
+  base.child("products").once("value").then(s=>{
+    const v = s.val();
+    if(v && Object.keys(v).length) return;
+
+    // generar ids si falta
+    const seed = (Array.isArray(SEED_PRODUCTS)? SEED_PRODUCTS : []).map(p=>({
+      id: p.id || uid(),
+      name: p.name,
+      stock: Number(p.stock||0),
+      category: normCat(p.category || "Sin categoría"),
+      createdAt: p.createdAt || Date.now()
+    }));
+
+    const prodObj = {};
+    const catObj = { "Sin categoría": true };
+    for(const p of seed){
+      prodObj[p.id] = p;
+      if(p.category && p.category !== "Sin categoría") catObj[p.category] = true;
+    }
+
+    // si no hay categorías guardadas por usuario, se dejan vacías (pero cats guarda keys para el filtro)
+    const updates = {
+      products: prodObj,
+      cats: catObj,
+      moves: {}
+    };
+    return base.update(updates);
+  }).catch(()=>{});
+}
+
+function scheduleCloudSave(){
+  if(!cloudDb) return;
+  if(suppressCloudSave) return;
+  clearTimeout(cloudSaveTimer);
+  cloudSaveTimer = setTimeout(pushAllToCloud, 250);
+}
+
+function pushAllToCloud(){
+  if(!cloudDb) return;
+  if(suppressCloudSave) return;
+
+  const base = cloudDb.ref(CLOUD.appPath);
+  const prodObj = {};
+  for(const p of products){
+    if(!p.id) p.id = uid();
+    prodObj[p.id] = p;
+  }
+  const movesObj = {};
+  for(const m of moves){
+    if(!m.id) m.id = uid();
+    movesObj[m.id] = m;
+  }
+  const catsObj = { "Sin categoría": true };
+  for(const c of (userCats||[])){
+    const cc = normCat(c);
+    if(cc && cc !== "Sin categoría") catsObj[cc] = true;
+  }
+  base.update({
+    products: prodObj,
+    moves: movesObj,
+    cats: catsObj,
+    meta: { updatedAt: Date.now() }
+  }).catch((e)=>console.warn("Cloud save error", e));
+}
+
+function renderAll(){
+  renderProducts();
+  renderMoves();
+  totals();
+  refreshCategoryUI();
+}
+
+
+  const LS_PRODUCTS = "stock_v3_products";
+  const LS_MOVES = "stock_v3_moves";
+  const LS_CATS  = "stock_v3_categories";
+  // CARGA INICIAL INCLUIDA (para subir a la nube ya listo)
+  const SEED_VERSION = "2025-12-31";
+  const SEED_PRODUCTS = [{"name": "abrazadera 16-27", "stock": 350, "category": "Sin categoría"}, {"name": "abrazadera 30-45", "stock": 60, "category": "Sin categoría"}, {"name": "abrazadera 8-16", "stock": 184, "category": "Sin categoría"}, {"name": "grampa caño alta", "stock": 60, "category": "Sin categoría"}, {"name": "precinto plastico 150*100  x 100 uni", "stock": 0, "category": "Sin categoría"}, {"name": "precinto plastico 18*100  x 100 uni", "stock": 7, "category": "Sin categoría"}, {"name": "abrazadera 12-22", "stock": 227, "category": "Sin categoría"}, {"name": "adaptador emul 4 cilindros", "stock": 0, "category": "Sin categoría"}, {"name": "arandela para manometro", "stock": 80, "category": "Sin categoría"}, {"name": "bobina reg TES PP", "stock": 4, "category": "Sin categoría"}, {"name": "bobina reg TES TT01", "stock": 4, "category": "Sin categoría"}, {"name": "bobina landi", "stock": 3, "category": "Sin categoría"}, {"name": "bolsa venteo doble", "stock": 5, "category": "Sin categoría"}, {"name": "cable interface inalambrico aeb", "stock": 0, "category": "Sin categoría"}, {"name": "cable interface inalambrico sgv", "stock": 1, "category": "Sin categoría"}, {"name": "cable interface stag", "stock": 2, "category": "Sin categoría"}, {"name": "cable adaptador variador sgv", "stock": 33, "category": "Sin categoría"}, {"name": "cableado electronica mp48", "stock": 4, "category": "Sin categoría"}, {"name": "cableadoelectronica mp48 axxis", "stock": 8, "category": "Sin categoría"}, {"name": "caño alta presion", "stock": 56, "category": "Sin categoría"}, {"name": "cedulas obleas 2025", "stock": 1800, "category": "Sin categoría"}, {"name": "centralina 3 en 1 axxis", "stock": 4, "category": "Sin categoría"}, {"name": "CENTRalina 3 en 1 SGV", "stock": 2, "category": "Sin categoría"}, {"name": "certificados ph", "stock": 2000, "category": "Sin categoría"}, {"name": "cil 30*244 - kioshi", "stock": 2, "category": "Sin categoría"}, {"name": "cil 30*273 - kioshi", "stock": 28, "category": "Sin categoría"}, {"name": "cil 40*273 - kioshi", "stock": 14, "category": "Sin categoría"}, {"name": "cil 40*273 - inflex", "stock": 0, "category": "Sin categoría"}, {"name": "cil 50*273 - kioshi", "stock": 4, "category": "Sin categoría"}, {"name": "cil 60*273 - kioshi", "stock": 0, "category": "Sin categoría"}, {"name": "cil 40*323 - inflex", "stock": 0, "category": "Sin categoría"}, {"name": "cil 50*323 - inflex", "stock": 0, "category": "Sin categoría"}, {"name": "cil 58*323 - inflex", "stock": 0, "category": "Sin categoría"}, {"name": "cil 58*323 - kioshi", "stock": 0, "category": "Sin categoría"}, {"name": "cil 65*323 - kioshi", "stock": 0, "category": "Sin categoría"}, {"name": "cil 58*340 - kioshi", "stock": 15, "category": "Sin categoría"}, {"name": "cil 58*340 - inprocil", "stock": 0, "category": "Sin categoría"}, {"name": "cil 65*340 - kioshi", "stock": 6, "category": "Sin categoría"}, {"name": "cil 58*355 - kioshi", "stock": 0, "category": "Sin categoría"}, {"name": "cil 65*355 - kioshi", "stock": 0, "category": "Sin categoría"}, {"name": "cil 70*355 - kioshi", "stock": 1, "category": "Sin categoría"}, {"name": "cil 80*355 - kioshi", "stock": 1, "category": "Sin categoría"}, {"name": "cil 90*406 - kioshi", "stock": 1, "category": "Sin categoría"}, {"name": "cil 120*406 - kioshi", "stock": 0, "category": "Sin categoría"}, {"name": "cuna ecosport - kevi", "stock": 0, "category": "Sin categoría"}, {"name": "cuna kangoo armada - fr", "stock": 1, "category": "Sin categoría"}, {"name": "cuna 273 - kevi", "stock": 20, "category": "Sin categoría"}, {"name": "cuna 340 - kioshi", "stock": 14, "category": "Sin categoría"}, {"name": "cuna 323 - kevi", "stock": 25, "category": "Sin categoría"}, {"name": "cuna 355 - kioshi", "stock": 4, "category": "Sin categoría"}, {"name": "cuna 406 - kioshi", "stock": 2, "category": "Sin categoría"}, {"name": "cuna universal bajo chasis", "stock": 10, "category": "Sin categoría"}, {"name": "cuna paloma f-100", "stock": 2, "category": "Sin categoría"}, {"name": "cuna ranger - 3 cil", "stock": 2, "category": "Sin categoría"}, {"name": "cuna fiat toro - kevi", "stock": 0, "category": "Sin categoría"}, {"name": "derivador rampa", "stock": 0, "category": "Sin categoría"}, {"name": "kit diafragmas varios", "stock": 56, "category": "Sin categoría"}, {"name": "ecu mp48 - aeb", "stock": 2, "category": "Sin categoría"}, {"name": "electrovalvula de nafta - tesmon", "stock": 12, "category": "Sin categoría"}, {"name": "electronica completa mp48 - axxis", "stock": 48, "category": "Sin categoría"}, {"name": "electronica completa mp48 - aeb", "stock": 5, "category": "Sin categoría"}, {"name": "funda para zuncho", "stock": 25, "category": "Sin categoría"}, {"name": "electronica completa sgv - con rampa", "stock": 1, "category": "Sin categoría"}, {"name": "emulador reset combustible - sgv", "stock": 8, "category": "Sin categoría"}, {"name": "emulador reset comb - axxis", "stock": 4, "category": "Sin categoría"}, {"name": "emulador obd can - sgv", "stock": 0, "category": "Sin categoría"}, {"name": "emulador obd 2 - aiv", "stock": 38, "category": "Sin categoría"}, {"name": "emulador sonda - sgv", "stock": 5, "category": "Sin categoría"}, {"name": "emulador 4 cil - sgv", "stock": 31, "category": "Sin categoría"}, {"name": "filtro pp", "stock": 61, "category": "Sin categoría"}, {"name": "emulador sonda monopunto - sgv", "stock": 0, "category": "Sin categoría"}, {"name": "goma amortiguacion * metro", "stock": 23, "category": "Sin categoría"}, {"name": "kit iny tesmon", "stock": 0, "category": "Sin categoría"}, {"name": "kit pp  - sgv", "stock": 0, "category": "Sin categoría"}, {"name": "mini kit pp - tesmon", "stock": 0, "category": "Sin categoría"}, {"name": "kit pp para 6 cilindros - tesmon", "stock": 1, "category": "Sin categoría"}, {"name": "kit pp para 6 cilindros - axxis", "stock": 1, "category": "Sin categoría"}, {"name": "llave carburada - sgv", "stock": 14, "category": "Sin categoría"}, {"name": "llave inyeccion - sgv", "stock": 46, "category": "Sin categoría"}, {"name": "manguera 11 mm x metro", "stock": 115, "category": "Sin categoría"}, {"name": "manguera 17 mm mallada x metro", "stock": 42, "category": "Sin categoría"}, {"name": "mangue 32 mm corrugada venteo x metro", "stock": 40, "category": "Sin categoría"}, {"name": "manguera 6 mm  x metro", "stock": 45, "category": "Sin categoría"}, {"name": "manguera 8 mm x metro", "stock": 110, "category": "Sin categoría"}, {"name": "manguera 5 mm x metro", "stock": 92, "category": "Sin categoría"}, {"name": "manometro axxis", "stock": 9, "category": "Sin categoría"}, {"name": "manometro sgv", "stock": 9, "category": "Sin categoría"}, {"name": "mezcladores - tecno", "stock": 36, "category": "Sin categoría"}, {"name": "mezcladores especiales - tecno", "stock": 5, "category": "Sin categoría"}, {"name": "mezcladores zico", "stock": 232, "category": "Sin categoría"}, {"name": "modulo llave - sgv", "stock": 23, "category": "Sin categoría"}, {"name": "modulo llave quinta - aeb", "stock": 3, "category": "Sin categoría"}, {"name": "modulo llave quinta -axxis", "stock": 9, "category": "Sin categoría"}, {"name": "niple corto", "stock": 86, "category": "Sin categoría"}, {"name": "niple largo", "stock": 3720, "category": "Sin categoría"}, {"name": "pico carga - tesmon", "stock": 5, "category": "Sin categoría"}, {"name": "pico inyector 10-12-14", "stock": 43, "category": "Sin categoría"}, {"name": "racord agua - reg", "stock": 18, "category": "Sin categoría"}, {"name": "rampa sgv", "stock": 47, "category": "Sin categoría"}, {"name": "rampa tesmon", "stock": 4, "category": "Sin categoría"}, {"name": "reductor agua 17-8", "stock": 82, "category": "Sin categoría"}, {"name": "t agua", "stock": 38, "category": "Sin categoría"}, {"name": "reductor glp - tesmon", "stock": 0, "category": "Sin categoría"}, {"name": "reductor pp - sgv", "stock": 27, "category": "Sin categoría"}, {"name": "reductor pp - axxis", "stock": 25, "category": "Sin categoría"}, {"name": "reductor pp - tesmon", "stock": 0, "category": "Sin categoría"}, {"name": "reductor tercera - tesmon", "stock": 9, "category": "Sin categoría"}, {"name": "reductor tercera- axxis", "stock": 25, "category": "Sin categoría"}, {"name": "reductor tercera potenciado  -tesmon", "stock": 1, "category": "Sin categoría"}, {"name": "registro alta simple", "stock": 25, "category": "Sin categoría"}, {"name": "registro y 1 registro", "stock": 107, "category": "Sin categoría"}, {"name": "registro y doble registro", "stock": 2, "category": "Sin categoría"}, {"name": "sensor map mp48 - aeb", "stock": 2, "category": "Sin categoría"}, {"name": "sensor map - sgv", "stock": 2, "category": "Sin categoría"}, {"name": "sensor map - axxis", "stock": 9, "category": "Sin categoría"}, {"name": "sensor temp rampa", "stock": 6, "category": "Sin categoría"}, {"name": "sensor temperatura", "stock": 33, "category": "Sin categoría"}, {"name": "sistema feedback - fbx5", "stock": 6, "category": "Sin categoría"}, {"name": "sporte rampa", "stock": 43, "category": "Sin categoría"}, {"name": "soporte valvula carga", "stock": 12, "category": "Sin categoría"}, {"name": "tapon ciego", "stock": 7, "category": "Sin categoría"}, {"name": "tapon ciego largo", "stock": 73, "category": "Sin categoría"}, {"name": "tapon plastico para cilindros", "stock": 600, "category": "Sin categoría"}, {"name": "tapon pico valvula de carga", "stock": 12, "category": "Sin categoría"}, {"name": "tee portamanometro", "stock": 43, "category": "Sin categoría"}, {"name": "valv corte electrico-doble venteo sgv", "stock": 379, "category": "Sin categoría"}, {"name": "valvula cde carga - sgv", "stock": 38, "category": "Sin categoría"}, {"name": "valvula de carga externa - jcr", "stock": 5, "category": "Sin categoría"}, {"name": "valvula de carga externa - rep nacional", "stock": 26, "category": "Sin categoría"}, {"name": "valvula de corte aereo - byh", "stock": 7, "category": "Sin categoría"}, {"name": "valvula de retencion rep nac", "stock": 53, "category": "Sin categoría"}, {"name": "variador avance - aiv", "stock": 0, "category": "Sin categoría"}, {"name": "variador avance 510- sgv", "stock": 4, "category": "Sin categoría"}, {"name": "variador avance 511 - sgv", "stock": 6, "category": "Sin categoría"}, {"name": "variador avance ws50 - sgv", "stock": 2, "category": "Sin categoría"}, {"name": "variador avance ws20 . Sgv", "stock": 8, "category": "Sin categoría"}, {"name": "virolas", "stock": 1530, "category": "Sin categoría"}, {"name": "zuncho largo - kevi", "stock": 27, "category": "Sin categoría"}, {"name": "thiner - x litro", "stock": 180, "category": "Sin categoría"}, {"name": "pintura x Litro", "stock": 210, "category": "Sin categoría"}, {"name": "granalla x kg", "stock": 350, "category": "Sin categoría"}, {"name": "bujias", "stock": 0, "category": "Sin categoría"}];
+
+  function seedIfEmpty(){
+    // si no hay productos guardados, cargamos el inventario incluido
+    try{
+      const existing = JSON.parse(localStorage.getItem(LS_PRODUCTS) || "[]");
+      if(Array.isArray(existing) && existing.length) return;
+    }catch{}
+
+    products = SEED_PRODUCTS.map(p => ({
+      id: uid(),
+      name: String(p.name||"").trim(),
+      stock: clampInt(p.stock),
+      category: normCat(p.category)
+    })).filter(p => p.name);
+    moves = [];
+    userCats = [];
+    // registro informativo
+    moves.push({
+      id: uid(),
+      ts: nowTs(),
+      productId: null,
+      productName: "IMPORT INICIAL",
+      type: "IMPORT",
+      delta: 0,
+      before: 0,
+      after: 0,
+      note: "Carga inicial incluida en el HTML (" + SEED_VERSION + ")"
+    });
+    save();
+  }
+
+
+  /** @type {{id:string,name:string,stock:number,createdAt:number}[]} */
+  let products = [];
+  /** @type {{id:string,ts:number,productId:string,productName:string,type:string,delta:number,before:number,after:number,note:string}[]} */
+  let moves = [];
+  /** @type {string[]} */
+  let userCats = [];
+
+  const $ = (id) => document.getElementById(id);
+
+  const els = {
+    pillTotals: $("pillTotals"),
+    pillCount: $("pillCount"),
+    pillMoves: $("pillMoves"),
+    list: $("list"),
+    emptyProducts: $("emptyProducts"),
+    movesTbody: $("movesTbody"),
+    emptyMoves: $("emptyMoves"),
+    q: $("q"),
+    mq: $("mq"),
+    btnAdd: $("btnAdd"),
+    btnImport: $("btnImport"),
+    fileImport: $("fileImport"),
+    btnExportStock: $("btnExportStock"),
+    btnExportMoves: $("btnExportMoves"),
+    btnReset: $("btnReset"),
+    backdrop: $("backdrop"),
+    mTitle: $("mTitle"),
+    mSub: $("mSub"),
+    mQty: $("mQty"),
+    mNote: $("mNote"),
+    btnCancel: $("btnCancel"),
+    btnConfirm: $("btnConfirm"),
+    menu: $("menu"),
+    miEdit: $("miEdit"),
+    miDelete: $("miDelete"),
+    catFilter: $("catFilter"),
+    btnCats: $("btnCats"),
+    backdropCats: $("backdropCats"),
+    cClose: $("cClose"),
+    cCancel: $("cCancel"),
+    cNew: $("cNew"),
+    cAdd: $("cAdd"),
+    cList: $("cList"),
+    backdropProd: $("backdropProd"),
+    pTitle: $("pTitle"),
+    pSub: $("pSub"),
+    pName: $("pName"),
+    pCat: $("pCat"),
+    catList: $("catList"),
+    pStockWrap: $("pStockWrap"),
+    pStock: $("pStock"),
+    pCancel: $("pCancel"),
+    pConfirm: $("pConfirm"),
+  };
+
+  function uid(){
+    return Math.random().toString(16).slice(2) + Date.now().toString(16);
+  }
+  function nowTs(){ return Date.now(); }
+  function fmtDate(ts){
+    const d = new Date(ts);
+    const pad = (n) => String(n).padStart(2,"0");
+    return `${pad(d.getDate())}/${pad(d.getMonth()+1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+  function clampInt(x){
+    const n = Number(String(x).replace(/[^\d-]/g,""));
+    if (!Number.isFinite(n)) return 0;
+    return Math.trunc(n);
+  }
+
+  function load(){
+    try{ products = JSON.parse(localStorage.getItem(LS_PRODUCTS) || "[]"); } catch{ products=[]; }
+    try{ moves = JSON.parse(localStorage.getItem(LS_MOVES) || "[]"); } catch{ moves=[]; }
+    try{ userCats = JSON.parse(localStorage.getItem(LS_CATS) || "[]"); } catch{ userCats=[]; }
+    // sanitize
+    products = Array.isArray(products) ? products : [];
+    moves = Array.isArray(moves) ? moves : [];
+    for(const p of products){
+      if(!("category" in p)) p.category = "Sin categoría";
+      p.category = normCat(p.category);
+    }
+  }
+  function save(){
+    localStorage.setItem(LS_PRODUCTS, JSON.stringify(products));
+    localStorage.setItem(LS_MOVES, JSON.stringify(moves));
+    localStorage.setItem(LS_CATS, JSON.stringify(userCats));
+    // nube (RTDB)
+    scheduleCloudSave();
+  }
+
+  function totals(){
+    els.pillTotals.textContent = `${products.length} productos · ${moves.length} mov.`;
+  }
+
+
+  const DEFAULT_CATS = ["Sin categoría"]; // legacy (no se usa)
+  let currentCat = "";
+
+  function normCat(c){
+    const s = String(c || "").trim();
+    return s ? s : "Sin categoría";
+  }
+  function categories(){
+    const set = new Set(["Sin categoría", ...userCats]);
+    for(const p of products) set.add(normCat(p.category));
+    return Array.from(set).sort((a,b)=> a.localeCompare(b,"es"));
+  }
+  function refreshCategoryUI(){
+    // filter select
+    const cats = categories();
+    const sel = els.catFilter;
+    if(sel){
+      const prev = currentCat;
+      sel.innerHTML = "";
+      const optAll = document.createElement("option");
+      optAll.value = "";
+      optAll.textContent = "Todas las categorías";
+      sel.appendChild(optAll);
+      for(const c of cats){
+        const o = document.createElement("option");
+        o.value = c;
+        o.textContent = c;
+        sel.appendChild(o);
+      }
+      sel.value = prev;
+    }
+    // datalist for modal
+    if(els.catList){
+      els.catList.innerHTML = "";
+      for(const c of cats){
+        const o = document.createElement("option");
+        o.value = c;
+        els.catList.appendChild(o);
+      }
+    }
+  }
+
+
+  function renderProducts(){
+    refreshCategoryUI();
+    const q = (els.q.value || "").trim().toLowerCase();
+    const rows = products
+      .slice()
+      .sort((a,b)=> a.name.localeCompare(b.name, "es"))
+      .filter(p => (!q || p.name.toLowerCase().includes(q)) && (!currentCat || normCat(p.category) === currentCat));
+
+    els.pillCount.textContent = `${rows.length}`;
+    els.list.innerHTML = "";
+    els.emptyProducts.style.display = products.length ? "none" : "block";
+
+    for(const p of rows){
+      const item = document.createElement("div");
+      item.className = "item";
+      item.dataset.id = p.id;
+
+      const left = document.createElement("div");
+      const name = document.createElement("div");
+      name.className = "name";
+      name.textContent = p.name;
+      const meta = document.createElement("div");
+      meta.className = "meta";
+
+      const stock = document.createElement("div");
+      stock.className = "stock " + (p.stock <= 0 ? "bad" : "good");
+      stock.textContent = String(p.stock);
+
+      const chip = document.createElement("span");
+      chip.className = "tag";
+      chip.textContent = normCat(p.category);
+      chip.title = "Editar categoría";
+      chip.style.cursor = "pointer";
+      chip.addEventListener("click", (e)=>{ e.stopPropagation(); openProductModal("edit", p.id); });
+
+      meta.appendChild(stock);
+      meta.appendChild(chip);
+
+      left.appendChild(name);
+      left.appendChild(meta);
+
+      const right = document.createElement("div");
+      right.className = "itemActions";
+
+      const btnPlus = document.createElement("button");
+      btnPlus.className = "btn-icon btn-accent";
+      btnPlus.title = "Entrada (+)";
+      btnPlus.textContent = "+";
+      btnPlus.addEventListener("click", (e)=>{ e.stopPropagation(); openAdjust(p.id, "ENTRADA"); });
+
+      const btnMinus = document.createElement("button");
+      btnMinus.className = "btn-icon";
+      btnMinus.title = "Salida (-)";
+      btnMinus.textContent = "–";
+      btnMinus.addEventListener("click", (e)=>{ e.stopPropagation(); openAdjust(p.id, "SALIDA"); });
+
+      const kebab = document.createElement("button");
+      kebab.className = "kebab";
+      kebab.title = "Más";
+      kebab.textContent = "⋯";
+      kebab.addEventListener("click", (e)=>{
+        e.stopPropagation();
+        openMenuFor(p.id, e.clientX, e.clientY);
+      });
+
+      // click on item = ajuste (elige según última acción? abrimos modal neutro)
+      item.addEventListener("click", ()=> openProductModal("edit", p.id));
+
+      right.appendChild(btnPlus);
+      right.appendChild(btnMinus);
+      right.appendChild(kebab);
+
+      item.appendChild(left);
+      item.appendChild(right);
+      els.list.appendChild(item);
+    }
+  }
+
+  function renderMoves(){
+    const q = (els.mq.value || "").trim().toLowerCase();
+    const recent = moves
+      .slice()
+      .sort((a,b)=> b.ts - a.ts)
+      .filter(m => {
+        if(!q) return true;
+        const blob = `${m.productName} ${m.type} ${m.note||""} ${m.delta} ${m.before} ${m.after}`.toLowerCase();
+        return blob.includes(q);
+      })
+      .slice(0, 80); // visible last 80
+
+    els.pillMoves.textContent = `${recent.length}`;
+    els.movesTbody.innerHTML = "";
+
+    els.emptyMoves.style.display = moves.length ? "none" : "block";
+
+    for(const m of recent){
+      const tr = document.createElement("tr");
+
+      const td1 = document.createElement("td");
+      td1.className = "nowrap mono";
+      td1.textContent = fmtDate(m.ts);
+
+      const td2 = document.createElement("td");
+      const title = document.createElement("div");
+      title.style.fontWeight = "900";
+      title.textContent = m.productName;
+      const sub = document.createElement("div");
+      sub.className = "small muted";
+      sub.textContent = `${m.type}${m.note ? " · " + m.note : ""}`;
+      td2.appendChild(title);
+      td2.appendChild(sub);
+
+      const td3 = document.createElement("td");
+      td3.className = "nowrap";
+      const d = document.createElement("span");
+      d.className = "delta " + (m.delta >= 0 ? "pos" : "neg");
+      d.textContent = (m.delta >= 0 ? "+" : "") + m.delta;
+      td3.appendChild(d);
+
+      const td4 = document.createElement("td");
+      td4.className = "mono nowrap";
+      td4.textContent = `${m.before}→${m.after}`;
+
+      tr.appendChild(td1);
+      tr.appendChild(td2);
+      tr.appendChild(td3);
+      tr.appendChild(td4);
+
+      els.movesTbody.appendChild(tr);
+    }
+  }
+
+  // Adjust modal state
+  let current = { productId:null, type:"AJUSTE" };
+
+  function getProduct(id){ return products.find(p=>p.id===id); }
+
+  
+  let prodModalState = { mode:"add", productId:null };
+
+  function openProductModal(mode, productId=null){
+    prodModalState = { mode, productId };
+    refreshCategoryUI();
+    const isAdd = mode === "add";
+    els.pTitle.textContent = isAdd ? "Nuevo producto" : "Editar producto";
+    els.pSub.textContent = isAdd ? "Alta rápida (con categoría)" : "Editar nombre / categoría";
+    els.pStockWrap.style.display = isAdd ? "block" : "none";
+
+    if(isAdd){
+      els.pName.value = "";
+      els.pCat.value = "";
+      els.pStock.value = "0";
+    } else {
+      const p = getProduct(productId);
+      if(!p) return;
+      els.pName.value = p.name || "";
+      els.pCat.value = normCat(p.category);
+      els.pStock.value = String(p.stock || 0);
+    }
+
+    els.backdropProd.style.display = "block";
+    els.backdropProd.setAttribute("aria-hidden","false");
+    setTimeout(()=>{ els.pName.focus(); els.pName.select(); }, 0);
+  }
+
+  function closeProductModal(){
+    els.backdropProd.style.display = "none";
+    els.backdropProd.setAttribute("aria-hidden","true");
+  }
+
+  function confirmProductModal(){
+    const mode = prodModalState.mode;
+    const isAdd = mode === "add";
+    const name = (els.pName.value || "").trim();
+    if(!name) return alert("Falta el nombre.");
+    const cat = normCat(els.pCat.value);
+    upsertCat(cat);
+    const ts = nowTs();
+
+    if(isAdd){
+      const stock = clampInt(els.pStock.value);
+      const p = { id: uid(), name, stock, category: cat, createdAt: ts };
+      products.push(p);
+      moves.push({
+        id: uid(),
+        ts,
+        productId: p.id,
+        productName: p.name,
+        type: "ALTA",
+        delta: stock,
+        before: 0,
+        after: stock,
+        note: `Alta producto · ${cat}`
+      });
+    } else {
+      const p = getProduct(prodModalState.productId);
+      if(!p) return closeProductModal();
+      const beforeName = p.name;
+      const beforeCat = normCat(p.category);
+      const changedName = name !== beforeName;
+      const changedCat = cat !== beforeCat;
+
+      if(!changedName && !changedCat){
+        closeProductModal();
+        return;
+      }
+
+      p.name = name;
+      p.category = cat;
+
+      moves.push({
+        id: uid(),
+        ts,
+        productId: p.id,
+        productName: p.name,
+        type: "EDICION",
+        delta: 0,
+        before: p.stock,
+        after: p.stock,
+        note: `Edición: ${(changedName ? "nombre" : "")}${(changedName && changedCat) ? " + " : ""}${(changedCat ? "categoría" : "")}${changedCat ? ` (${beforeCat} → ${cat})` : ""}`
+      });
+    }
+
+    save();
+    totals();
+    refreshCategoryUI();
+    renderProducts();
+    renderMoves();
+    closeProductModal();
+  }
+
+function openAdjust(productId, type){
+    closeMenu();
+    const p = getProduct(productId);
+    if(!p) return;
+    current.productId = productId;
+    current.type = type;
+
+    const titleMap = { ENTRADA:"Entrada", SALIDA:"Salida", AJUSTE:"Ajuste" };
+    els.mTitle.textContent = titleMap[type] || "Movimiento";
+    els.mSub.innerHTML = `<b>${escapeHtml(p.name)}</b> · Stock actual: <span class="mono">${p.stock}</span>`;
+    els.mQty.value = "";
+    els.mNote.value = "";
+    els.backdrop.style.display = "block";
+    els.backdrop.setAttribute("aria-hidden","false");
+
+    setTimeout(()=>{
+      els.mQty.focus();
+      els.mQty.select();
+    }, 50);
+  }
+
+  function closeAdjust(){
+    els.backdrop.style.display = "none";
+    els.backdrop.setAttribute("aria-hidden","true");
+    current.productId = null;
+  }
+
+  function confirmAdjust(){
+    const p = getProduct(current.productId);
+    if(!p) return closeAdjust();
+
+    const qty = clampInt(els.mQty.value);
+    if(qty <= 0){
+      // nada
+      closeAdjust();
+      return;
+    }
+    const note = (els.mNote.value || "").trim();
+
+    const before = p.stock;
+    let delta = 0;
+    let type = current.type;
+
+    if(type === "ENTRADA"){
+      delta = +Math.abs(qty);
+    }else if(type === "SALIDA"){
+      delta = -Math.abs(qty);
+    }else{
+      // AJUSTE: si ponen 5, preguntan si es delta o set? acá es delta por diseño operativo.
+      // Para setear, usar nota "SET" y se interpreta? no: mantenemos simple: AJUSTE = delta.
+      delta = (qty >= 0 ? +qty : qty);
+    }
+
+    p.stock = before + delta;
+    const after = p.stock;
+
+    moves.push({
+      id: uid(),
+      ts: nowTs(),
+      productId: p.id,
+      productName: p.name,
+      type: type,
+      delta,
+      before,
+      after,
+      note
+    });
+
+    save();
+    totals();
+    renderProducts();
+    renderMoves();
+    closeAdjust();
+  }
+
+  // Add / Edit / Delete
+  
+function addProduct(){
+    closeMenu();
+    openProductModal("add");
+  }
+
+  let menuState = { productId:null };
+
+  function openMenuFor(productId, x, y){
+    menuState.productId = productId;
+    const m = els.menu;
+    m.style.display = "block";
+    const pad = 8;
+    const w = 210;
+    const h = 96;
+    const vx = Math.min(x, window.innerWidth - w - pad);
+    const vy = Math.min(y, window.innerHeight - h - pad);
+    m.style.left = vx + "px";
+    m.style.top = vy + "px";
+  }
+  function closeMenu(){
+    els.menu.style.display = "none";
+    menuState.productId = null;
+  }
+
+  
+function editProductName(){
+    const p = getProduct(menuState.productId);
+    if(!p) return closeMenu();
+    openProductModal("edit", p.id);
+    closeMenu();
+  }
+
+  function deleteProduct(){
+    const p = getProduct(menuState.productId);
+    if(!p) return closeMenu();
+    const ok = confirm(`Eliminar "${p.name}"? Se borra el producto (los movimientos quedan).`);
+    if(!ok) return closeMenu();
+    products = products.filter(x => x.id !== p.id);
+
+    moves.push({
+      id: uid(),
+      ts: nowTs(),
+      productId: p.id,
+      productName: p.name,
+      type: "BAJA",
+      delta: 0,
+      before: p.stock,
+      after: p.stock,
+      note: "Baja producto"
+    });
+
+    save();
+    totals();
+    renderProducts();
+    renderMoves();
+    closeMenu();
+  }
+
+  // CSV
+  function toCsv(rows){
+    return rows.map(r => r.map(v => {
+      const s = String(v ?? "");
+      if(/[",\n;]/.test(s)) return `"${s.replace(/"/g,'""')}"`;
+      return s;
+    }).join(";")).join("\n");
+  }
+
+  function download(filename, text){
+    const blob = new Blob([text], {type:"text/csv;charset=utf-8"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  }
+
+  function exportStock(){
+    const header = ["nombre","stock","categoria"];
+    const rows = products
+      .slice()
+      .sort((a,b)=> a.name.localeCompare(b.name,"es"))
+      .map(p => [p.name, p.stock, normCat(p.category)]);
+    download(`stock_${new Date().toISOString().slice(0,10)}.csv`, toCsv([header, ...rows]));
+  }
+
+  function exportMoves(){
+    const header = ["fecha_iso","fecha","producto","tipo","delta","antes","despues","nota"];
+    const rows = moves
+      .slice()
+      .sort((a,b)=> b.ts - a.ts)
+      .map(m => [new Date(m.ts).toISOString(), fmtDate(m.ts), m.productName, m.type, m.delta, m.before, m.after, m.note || ""]);
+    download(`movimientos_${new Date().toISOString().slice(0,10)}.csv`, toCsv([header, ...rows]));
+  }
+
+  function parseCsv(text){
+    // Simple parser for ; or , separated, supports quotes
+    const sep = text.includes(";") ? ";" : ",";
+    const out = [];
+    let i=0, field="", row=[], inQ=false;
+    const pushField=()=>{ row.push(field); field=""; };
+    const pushRow=()=>{ out.push(row); row=[]; };
+    while(i<text.length){
+      const c = text[i];
+      if(inQ){
+        if(c === '"'){
+          if(text[i+1] === '"'){ field+='"'; i+=2; continue; }
+          inQ=false; i++; continue;
+        } else { field+=c; i++; continue; }
+      } else {
+        if(c === '"'){ inQ=true; i++; continue; }
+        if(c === "\r"){ i++; continue; }
+        if(c === sep){ pushField(); i++; continue; }
+        if(c === "\n"){ pushField(); pushRow(); i++; continue; }
+        field+=c; i++; continue;
+      }
+    }
+    pushField();
+    if(row.length>1 || (row.length===1 && row[0].trim()!=="")) pushRow();
+    return out;
+  }
+
+  function importStockFile(file){
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = String(reader.result || "");
+      const rows = parseCsv(text);
+      if(!rows.length) return alert("CSV vacío.");
+      // Expect header: nombre, stock (order free)
+      const header = rows[0].map(h => (h||"").trim().toLowerCase());
+      const nameIdx = header.findIndex(h => h.includes("nombre") || h==="producto");
+      const stockIdx = header.findIndex(h => h.includes("stock") || h.includes("cantidad"));
+      const catIdx = header.findIndex(h => h.includes("categoria") || h.includes("categoría") || h==="cat");
+      if(nameIdx === -1 || stockIdx === -1){
+        alert("CSV inválido. Necesita columnas: nombre + stock/cantidad. (categoría opcional). Separador ; o ,.");
+        return;
+      }
+
+      // Map existing by name (case-insensitive)
+      const byName = new Map(products.map(p => [p.name.trim().toLowerCase(), p]));
+      const imported = [];
+      for(let r=1;r<rows.length;r++){
+        const row = rows[r];
+        const name = (row[nameIdx]||"").trim();
+        if(!name) continue;
+        const stock = clampInt(row[stockIdx]);
+        const category = (catIdx>=0 ? (row[catIdx]||"").trim() : "");
+        imported.push({name, stock, category});
+      }
+      if(!imported.length){
+        alert("No encontré filas con nombre + stock.");
+        return;
+      }
+
+      const ts = nowTs();
+      // Replace/merge: keep existing IDs when name matches, otherwise create new.
+      const next = [];
+      for(const it of imported){
+        const key = it.name.trim().toLowerCase();
+        const existing = byName.get(key);
+        if(existing){
+          const before = existing.stock;
+          existing.stock = it.stock;
+          if(it.category) existing.category = normCat(it.category);
+          next.push(existing);
+
+          const delta = it.stock - before;
+          moves.push({
+            id: uid(),
+            ts,
+            productId: existing.id,
+            productName: existing.name,
+            type: "IMPORT",
+            delta,
+            before,
+            after: it.stock,
+            note: "Import CSV (reemplaza stock)"
+          });
+        } else {
+          const p = { id: uid(), name: it.name.trim(), stock: it.stock, createdAt: ts };
+          next.push(p);
+          moves.push({
+            id: uid(),
+            ts,
+            productId: p.id,
+            productName: p.name,
+            type: "IMPORT",
+            delta: p.stock,
+            before: 0,
+            after: p.stock,
+            note: `Import CSV (alta por import) · ${normCat(p.category)}`
+          });
+        }
+      }
+
+      products = next;
+      save();
+      totals();
+      renderProducts();
+      renderMoves();
+      alert(`Importado OK: ${imported.length} productos (reemplaza stock).`);
+    };
+    reader.readAsText(file, "utf-8");
+  }
+
+  function resetAll(){
+    const ok = confirm("Reset total? Borra productos y movimientos.");
+    if(!ok) return;
+    products = [];
+    moves = [];
+    save();
+    totals();
+    renderProducts();
+    renderMoves();
+  }
+
+  // Utils
+  function escapeHtml(str){
+    return String(str)
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  // Categorías (creadas por el usuario)
+  function upsertCat(cat){
+    const c = normCat(cat);
+    if(c === "Sin categoría") return;
+    if(!userCats.includes(c)){
+      userCats.push(c);
+      userCats.sort((a,b)=> a.localeCompare(b,"es"));
+      save();
+    }
+  }
+  function deleteUserCat(cat){
+    const c = normCat(cat);
+    userCats = userCats.filter(x => x !== c);
+    save();
+  }
+  function openCatsModal(){
+    if(!els.backdropCats) return;
+    els.backdropCats.style.display = "block";
+    els.backdropCats.setAttribute("aria-hidden","false");
+    renderCatsModal();
+    setTimeout(()=>{ els.cNew?.focus(); }, 0);
+  }
+  function closeCatsModal(){
+    if(!els.backdropCats) return;
+    els.backdropCats.style.display = "none";
+    els.backdropCats.setAttribute("aria-hidden","true");
+  }
+  function renderCatsModal(){
+    if(!els.cList) return;
+    els.cList.innerHTML = "";
+    const cats = userCats.slice().sort((a,b)=>a.localeCompare(b,"es"));
+    if(cats.length === 0){
+      const empty = document.createElement("div");
+      empty.className = "muted small";
+      empty.textContent = "No tenés categorías creadas todavía.";
+      els.cList.appendChild(empty);
+      return;
+    }
+    for(const c of cats){
+      const row = document.createElement("div");
+      row.className = "item";
+      row.style.display = "flex";
+      row.style.gap = "10px";
+      row.style.alignItems = "center";
+
+      const inp = document.createElement("input");
+      inp.value = c;
+      inp.style.flex = "1";
+      inp.setAttribute("aria-label", "Nombre de categoría");
+
+      const del = document.createElement("button");
+      del.className = "btn danger";
+      del.type = "button";
+      del.textContent = "Eliminar";
+
+      del.addEventListener("click", ()=>{
+        deleteUserCat(c);
+        renderCatsModal();
+        refreshCategoryUI();
+        renderProducts();
+      });
+
+      inp.addEventListener("keydown", (e)=>{
+        if(e.key === "Enter"){ inp.blur(); }
+      });
+      inp.addEventListener("blur", ()=>{
+        const next = normCat(inp.value);
+        if(next === "Sin categoría"){ inp.value = c; return; }
+        if(!next || next === c) { inp.value = c; return; }
+        // rename
+        if(userCats.includes(next)){
+          inp.value = c;
+          return;
+        }
+        userCats = userCats.map(x => x===c ? next : x).sort((a,b)=>a.localeCompare(b,"es"));
+        // also update products that used old category
+        for(const p of products){
+          if(normCat(p.category) === c) p.category = next;
+        }
+        save();
+        renderCatsModal();
+        refreshCategoryUI();
+        renderProducts();
+      });
+
+      row.appendChild(inp);
+      row.appendChild(del);
+      els.cList.appendChild(row);
+    }
+  }
+
+
+  // Events
+  els.btnAdd.addEventListener("click", addProduct);
+  els.btnExportStock.addEventListener("click", exportStock);
+  els.btnExportMoves.addEventListener("click", exportMoves);
+  els.btnReset.addEventListener("click", resetAll);
+
+  els.q.addEventListener("input", renderProducts);
+  if(els.catFilter){
+    els.catFilter.addEventListener("change", (e)=>{ currentCat = e.target.value; renderProducts(); });
+  }
+
+
+  if(els.btnCats){
+    els.btnCats.addEventListener("click", openCatsModal);
+  }
+  if(els.cClose) els.cClose.addEventListener("click", closeCatsModal);
+  if(els.cCancel) els.cCancel.addEventListener("click", closeCatsModal);
+  if(els.backdropCats){
+    els.backdropCats.addEventListener("click", (e)=>{ if(e.target === els.backdropCats) closeCatsModal(); });
+  }
+  if(els.cAdd){
+    els.cAdd.addEventListener("click", ()=>{
+      const v = normCat(els.cNew.value);
+      if(v === "Sin categoría") return;
+      upsertCat(v);
+      els.cNew.value = "";
+      renderCatsModal();
+      refreshCategoryUI();
+      renderProducts();
+      els.cNew.focus();
+    });
+  }
+  if(els.cNew){
+    els.cNew.addEventListener("keydown", (e)=>{
+      if(e.key === "Enter"){ e.preventDefault(); els.cAdd?.click(); }
+      if(e.key === "Escape"){ closeCatsModal(); }
+    });
+  }
+
+  els.mq.addEventListener("input", renderMoves);
+
+  els.btnImport.addEventListener("click", ()=> els.fileImport.click());
+  els.fileImport.addEventListener("change", (e)=>{
+    const f = e.target.files && e.target.files[0];
+    if(f) importStockFile(f);
+    els.fileImport.value = "";
+  });
+
+  els.btnCancel.addEventListener("click", closeAdjust);
+  els.btnConfirm.addEventListener("click", confirmAdjust);
+  els.pCancel.addEventListener("click", closeProductModal);
+  els.pConfirm.addEventListener("click", confirmProductModal);
+  els.backdropProd.addEventListener("click", (e)=>{ if(e.target===els.backdropProd) closeProductModal(); });
+  els.backdrop.addEventListener("click", (e)=>{
+    if(e.target === els.backdrop) closeAdjust();
+  });
+
+  document.addEventListener("keydown", (e)=>{
+    // Ctrl+K focus search
+    if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k"){
+      e.preventDefault();
+      els.q.focus();
+      els.q.select();
+      return;
+    }
+    // ESC closes modal/menu
+    if(e.key === "Escape"){
+      if(els.backdrop.style.display === "block") closeAdjust();
+      if(els.backdropProd.style.display === "block") closeProductModal();
+      closeMenu();
+      return;
+    }
+    // Enter confirms modal
+    if(e.key === "Enter" && els.backdrop.style.display === "block"){
+      e.preventDefault();
+      confirmAdjust();
+      return;
+    }
+    if(e.key === "Enter" && els.backdropProd.style.display === "block"){
+      e.preventDefault();
+      confirmProductModal();
+      return;
+    }
+  });
+
+  // menu events
+  document.addEventListener("click", (e)=>{
+    if(els.menu.style.display === "block"){
+      if(!els.menu.contains(e.target)) closeMenu();
+    }
+  });
+  els.miEdit.addEventListener("click", editProductName);
+  els.miDelete.addEventListener("click", deleteProduct);
+
+  // init
+  seedIfEmpty();
+  load();
+  refreshCategoryUI();
+  totals();
+  renderProducts();
+  renderMoves();
+  // nube
+  initCloud();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+STOCK QUIROGA GNC (Realtime Database - 30 días de prueba)
+
+1) Subí index.html a tu hosting (GitHub Pages / Netlify / Firebase Hosting).
+2) En Firebase Console -> Realtime Database -> Rules pegá (SIN comentarios):
+
+{
+  "rules": {
+    "apps": {
+      "stock_quiroga_gnc": {
+        ".read": "now < 1770778800000",
+        ".write": "now < 1770778800000"
+      }
+    }
+  }
+}
+
+3) Asegurate que tu Realtime Database URL sea:
+https://stockcardenal-default-rtdb.firebaseio.com
+Si tu URL es distinta, editá en index.html:
+CLOUD.config.databaseURL
+
+Notas:
+- La primera vez que abre con la nube vacía, siembra el inventario incluido (SEED_PRODUCTS).
+- El sistema también guarda cache localStorage, pero la fuente es la nube.

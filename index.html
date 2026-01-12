@@ -307,6 +307,11 @@
   .table th{ color: rgba(11,18,32,.70); }
   .kbd{ background: rgba(11,18,32,.06); border-color: rgba(11,18,32,.14); color: rgba(11,18,32,.80); }
 
+
+  .catRow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .catRow select{flex:1 1 220px;min-width:220px}
+  .catRow input{flex:2 1 220px;min-width:220px}
+  .catRow .btn{padding:10px 12px;flex:0 0 auto}
 </style>
 </head>
 <body>
@@ -442,9 +447,13 @@
       <label for="pName">Nombre</label>
       <input id="pName" placeholder="Ej: Lavandina 5L" />
 
-      <label for="pCat" style="margin-top:10px">Categoría</label>
-      <input id="pCat" list="catList" placeholder="Ej: Limpieza" />
-      <datalist id="catList"></datalist>
+      <label style="margin-top:10px">Categoría</label>
+      <div class="catRow">
+        <select id="pCatSel" aria-label="Categoría"></select>
+        <input id="pCatNew" placeholder="Nueva categoría (opcional)" />
+        <button id="pCatUseNew" type="button" class="btn">Usar</button>
+      </div>
+      <div class="muted small" style="margin-top:6px">Tip: escribí una nueva categoría y tocá “Usar” para crearla.</div>
 
       <div id="pStockWrap" style="margin-top:10px">
         <label for="pStock">Stock inicial</label>
@@ -784,8 +793,9 @@ function renderAll(){
     pTitle: $("pTitle"),
     pSub: $("pSub"),
     pName: $("pName"),
-    pCat: $("pCat"),
-    catList: $("catList"),
+    pCatSel: $("pCatSel"),
+    pCatNew: $("pCatNew"),
+    pCatUseNew: $("pCatUseNew"),
     pStockWrap: $("pStockWrap"),
     pStock: $("pStock"),
     pCancel: $("pCancel"),
@@ -863,15 +873,21 @@ function renderAll(){
       }
       sel.value = prev;
     }
-    // datalist for modal
-    if(els.catList){
-      els.catList.innerHTML = "";
+    // select for product modal
+    if(els.pCatSel){
+      const prev = els.pCatSel.value || "Sin categoría";
+      els.pCatSel.innerHTML = "";
       for(const c of cats){
         const o = document.createElement("option");
         o.value = c;
-        els.catList.appendChild(o);
+        o.textContent = c;
+        els.pCatSel.appendChild(o);
       }
+      // keep selection if exists
+      els.pCatSel.value = cats.includes(prev) ? prev : "Sin categoría";
     }
+
+  }
   }
 
 
@@ -1025,13 +1041,15 @@ function renderAll(){
 
     if(isAdd){
       els.pName.value = "";
-      els.pCat.value = "";
+      els.pCatSel.value = "Sin categoría";
+      els.pCatNew.value = "";
       els.pStock.value = "0";
     } else {
       const p = getProduct(productId);
       if(!p) return;
       els.pName.value = p.name || "";
-      els.pCat.value = normCat(p.category);
+      els.pCatSel.value = normCat(p.category);
+      els.pCatNew.value = "";
       els.pStock.value = String(p.stock || 0);
     }
 
@@ -1050,7 +1068,9 @@ function renderAll(){
     const isAdd = mode === "add";
     const name = (els.pName.value || "").trim();
     if(!name) return alert("Falta el nombre.");
-    const cat = normCat(els.pCat.value);
+    const typed = normCat(els.pCatNew?.value);
+    const selCat = normCat(els.pCatSel?.value);
+    const cat = (typed && typed !== "Sin categoría" && (els.pCatNew.value||"").trim()) ? typed : selCat;
     upsertCat(cat);
     const ts = nowTs();
 
@@ -1556,6 +1576,28 @@ function editProductName(){
       refreshCategoryUI();
       renderProducts();
       els.cNew.focus();
+    });
+  }
+
+  // En modal de producto: crear categoría rápida y seleccionarla
+  if(els.pCatUseNew){
+    els.pCatUseNew.addEventListener("click", ()=>{
+      const v = normCat(els.pCatNew?.value);
+      if(!v || v === "Sin categoría") return;
+      upsertCat(v);
+      refreshCategoryUI();
+      if(els.pCatSel) els.pCatSel.value = v;
+      els.pCatNew.value = "";
+      renderProducts();
+    });
+  }
+
+  if(els.pCatNew){
+    els.pCatNew.addEventListener("keydown", (e)=>{
+      if(e.key === "Enter"){
+        e.preventDefault();
+        els.pCatUseNew?.click();
+      }
     });
   }
   if(els.cNew){

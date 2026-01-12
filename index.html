@@ -1099,6 +1099,23 @@ function renderAll(){
     }
 
     save();
+
+    // cloud: escritura directa del producto (y cats) para que la categoría se aplique siempre
+    if(cloudDb){
+      try{
+        const pid = isAdd ? products[products.length-1].id : prodModalState.productId;
+        const p = getProduct(pid);
+        if(p){
+          cloudDb.ref(`${CLOUD.appPath}/products/${p.id}`).set(p);
+          // asegurar categoría en cats
+          const cc = normCat(p.category);
+          if(cc && cc !== "Sin categoría"){
+            cloudDb.ref(`${CLOUD.appPath}/cats/${cc}`).set(true);
+          }
+        }
+      } catch(e){}
+    }
+
     totals();
     refreshCategoryUI();
     renderProducts();
@@ -1414,10 +1431,17 @@ function editProductName(){
   function upsertCat(cat){
     const c = normCat(cat);
     if(c === "Sin categoría") return;
+    // local
     if(!userCats.includes(c)){
       userCats.push(c);
       userCats.sort((a,b)=> a.localeCompare(b,"es"));
-      save();
+      save(); // mantiene compat local
+    }
+    // cloud (escritura directa para evitar carreras)
+    if(cloudDb){
+      try{
+        cloudDb.ref(`${CLOUD.appPath}/cats/${c}`).set(true);
+      } catch(e){}
     }
   }
   function deleteUserCat(cat){

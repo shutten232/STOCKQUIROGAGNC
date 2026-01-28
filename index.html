@@ -532,7 +532,7 @@
 // (sin comentarios y sin coma final en la consola)
 const CLOUD = {
   enabled: true,
-  appPath: "apps/stock_quiroga_gnc",
+  appPath: "quirgroup_gnc_stock_v1",
   // Si tu RTDB no es default-rtdb, cambiá la URL por la exacta que te muestre Firebase.
   config: {
     apiKey: "AIzaSyCrsTFJYNIYzaPTindRgHeMp8rpMHSnrRc",
@@ -545,6 +545,10 @@ const CLOUD = {
   }
 };
 
+// NUBE OBLIGATORIA: no se usa localStorage para stock/movimientos.
+const CLOUD_ONLY = true;
+
+
 let cloudDb = null;
 let cloudReady = false;
 let suppressCloudSave = false;
@@ -553,15 +557,18 @@ let cloudSaveTimer = null;
 function initCloud(){
   if(!CLOUD.enabled) return;
   if(!window.firebase || !firebase.initializeApp || !firebase.database){
-    console.warn("Firebase no cargó. Se usa modo local.");
+    console.warn("Firebase no cargó.");
+    if(CLOUD_ONLY) alert("Firebase no cargó. Este sistema requiere nube.");
     return;
   }
   try{
     firebase.initializeApp(CLOUD.config);
     cloudDb = firebase.database();
     attachCloudListeners();
+    seedCloudFromInitialCsv(false);
   } catch(err){
-    console.warn("Firebase init falló. Se usa modo local.", err);
+    console.warn("Firebase init falló.", err);
+    if(CLOUD_ONLY) alert("Firebase falló. Este sistema requiere nube.");
     cloudDb = null;
   }
 }
@@ -630,6 +637,77 @@ function attachCloudListeners(){
     cloudReady = true;
   });
 }
+
+  async function seedCloudFromInitialCsv(force=false){
+    if(!cloudDb) return;
+    const base = cloudDb.ref(CLOUD.appPath);
+    try{
+      const snap = await base.child("products").once("value");
+      const existing = snap.val();
+      const isEmpty = !existing || (typeof existing === "object" && Object.keys(existing).length === 0);
+      if(!force && !isEmpty) return;
+
+      const res = await fetch("inventario_inicial.csv", { cache: "no-store" });
+      const txt = await res.text();
+
+      const lines = txt.replace(/^\uFEFF/,"").split(/\r?\n/).filter(l=>l.trim().length);
+      if(lines.length < 2) return;
+
+      const splitLine = (line) => {
+        const res = [];
+        let cur="", inQ=false;
+        for(let i=0;i<line.length;i++){
+          const ch=line[i];
+          if(ch === '"'){
+            if(inQ && line[i+1] === '"'){ cur += '"'; i++; }
+            else inQ = !inQ;
+          } else if((ch === ';' || ch === ',') && !inQ){
+            res.push(cur); cur="";
+          } else cur += ch;
+        }
+        res.push(cur);
+        return res;
+      };
+
+      const header = splitLine(lines[0]).map(h=>String(h||"").trim().toLowerCase());
+      const idxAny = (names)=>{
+        for(const n of names){
+          const i = header.indexOf(n);
+          if(i !== -1) return i;
+        }
+        return -1;
+      };
+      const iNombre = idxAny(["nombre","articulo","artículo","producto","name"]);
+      const iCant = idxAny(["cantidad","stock","stock_actual","existencia","qty"]);
+      if(iNombre === -1 || iCant === -1) return;
+
+      const newProducts = [];
+      for(let r=1;r<lines.length;r++){
+        const cols = splitLine(lines[r]);
+        const nombre = String(cols[iNombre] ?? "").trim();
+        const cant = parseInt(String(cols[iCant] ?? "0").trim(), 10);
+        if(!nombre) continue;
+        newProducts.push({
+          id: uid(),
+          name: nombre,
+          stock: Number.isFinite(cant) && cant >= 0 ? cant : 0,
+          category: "Sin categoría"
+        });
+      }
+
+      suppressCloudSave = true;
+      await base.child("products").set(newProducts);
+      await base.child("moves").set([]);
+      await base.child("userCats").set([]);
+      await base.child("meta").set({ seededAt: Date.now(), seedFile: "inventario_inicial.csv" });
+    } catch(err){
+      console.warn("Seed cloud falló", err);
+    } finally {
+      suppressCloudSave = false;
+    }
+  }
+
+
 
 function seedCloudIfEmpty(){
   if(!cloudDb) return;
@@ -716,6 +794,7 @@ function renderAll(){
   const SEED_PRODUCTS = [{"name": "abrazadera 16-27", "stock": 350, "category": "Sin categoría"}, {"name": "abrazadera 30-45", "stock": 60, "category": "Sin categoría"}, {"name": "abrazadera 8-16", "stock": 184, "category": "Sin categoría"}, {"name": "grampa caño alta", "stock": 60, "category": "Sin categoría"}, {"name": "precinto plastico 150*100  x 100 uni", "stock": 0, "category": "Sin categoría"}, {"name": "precinto plastico 18*100  x 100 uni", "stock": 7, "category": "Sin categoría"}, {"name": "abrazadera 12-22", "stock": 227, "category": "Sin categoría"}, {"name": "adaptador emul 4 cilindros", "stock": 0, "category": "Sin categoría"}, {"name": "arandela para manometro", "stock": 80, "category": "Sin categoría"}, {"name": "bobina reg TES PP", "stock": 4, "category": "Sin categoría"}, {"name": "bobina reg TES TT01", "stock": 4, "category": "Sin categoría"}, {"name": "bobina landi", "stock": 3, "category": "Sin categoría"}, {"name": "bolsa venteo doble", "stock": 5, "category": "Sin categoría"}, {"name": "cable interface inalambrico aeb", "stock": 0, "category": "Sin categoría"}, {"name": "cable interface inalambrico sgv", "stock": 1, "category": "Sin categoría"}, {"name": "cable interface stag", "stock": 2, "category": "Sin categoría"}, {"name": "cable adaptador variador sgv", "stock": 33, "category": "Sin categoría"}, {"name": "cableado electronica mp48", "stock": 4, "category": "Sin categoría"}, {"name": "cableadoelectronica mp48 axxis", "stock": 8, "category": "Sin categoría"}, {"name": "caño alta presion", "stock": 56, "category": "Sin categoría"}, {"name": "cedulas obleas 2025", "stock": 1800, "category": "Sin categoría"}, {"name": "centralina 3 en 1 axxis", "stock": 4, "category": "Sin categoría"}, {"name": "CENTRalina 3 en 1 SGV", "stock": 2, "category": "Sin categoría"}, {"name": "certificados ph", "stock": 2000, "category": "Sin categoría"}, {"name": "cil 30*244 - kioshi", "stock": 2, "category": "Sin categoría"}, {"name": "cil 30*273 - kioshi", "stock": 28, "category": "Sin categoría"}, {"name": "cil 40*273 - kioshi", "stock": 14, "category": "Sin categoría"}, {"name": "cil 40*273 - inflex", "stock": 0, "category": "Sin categoría"}, {"name": "cil 50*273 - kioshi", "stock": 4, "category": "Sin categoría"}, {"name": "cil 60*273 - kioshi", "stock": 0, "category": "Sin categoría"}, {"name": "cil 40*323 - inflex", "stock": 0, "category": "Sin categoría"}, {"name": "cil 50*323 - inflex", "stock": 0, "category": "Sin categoría"}, {"name": "cil 58*323 - inflex", "stock": 0, "category": "Sin categoría"}, {"name": "cil 58*323 - kioshi", "stock": 0, "category": "Sin categoría"}, {"name": "cil 65*323 - kioshi", "stock": 0, "category": "Sin categoría"}, {"name": "cil 58*340 - kioshi", "stock": 15, "category": "Sin categoría"}, {"name": "cil 58*340 - inprocil", "stock": 0, "category": "Sin categoría"}, {"name": "cil 65*340 - kioshi", "stock": 6, "category": "Sin categoría"}, {"name": "cil 58*355 - kioshi", "stock": 0, "category": "Sin categoría"}, {"name": "cil 65*355 - kioshi", "stock": 0, "category": "Sin categoría"}, {"name": "cil 70*355 - kioshi", "stock": 1, "category": "Sin categoría"}, {"name": "cil 80*355 - kioshi", "stock": 1, "category": "Sin categoría"}, {"name": "cil 90*406 - kioshi", "stock": 1, "category": "Sin categoría"}, {"name": "cil 120*406 - kioshi", "stock": 0, "category": "Sin categoría"}, {"name": "cuna ecosport - kevi", "stock": 0, "category": "Sin categoría"}, {"name": "cuna kangoo armada - fr", "stock": 1, "category": "Sin categoría"}, {"name": "cuna 273 - kevi", "stock": 20, "category": "Sin categoría"}, {"name": "cuna 340 - kioshi", "stock": 14, "category": "Sin categoría"}, {"name": "cuna 323 - kevi", "stock": 25, "category": "Sin categoría"}, {"name": "cuna 355 - kioshi", "stock": 4, "category": "Sin categoría"}, {"name": "cuna 406 - kioshi", "stock": 2, "category": "Sin categoría"}, {"name": "cuna universal bajo chasis", "stock": 10, "category": "Sin categoría"}, {"name": "cuna paloma f-100", "stock": 2, "category": "Sin categoría"}, {"name": "cuna ranger - 3 cil", "stock": 2, "category": "Sin categoría"}, {"name": "cuna fiat toro - kevi", "stock": 0, "category": "Sin categoría"}, {"name": "derivador rampa", "stock": 0, "category": "Sin categoría"}, {"name": "kit diafragmas varios", "stock": 56, "category": "Sin categoría"}, {"name": "ecu mp48 - aeb", "stock": 2, "category": "Sin categoría"}, {"name": "electrovalvula de nafta - tesmon", "stock": 12, "category": "Sin categoría"}, {"name": "electronica completa mp48 - axxis", "stock": 48, "category": "Sin categoría"}, {"name": "electronica completa mp48 - aeb", "stock": 5, "category": "Sin categoría"}, {"name": "funda para zuncho", "stock": 25, "category": "Sin categoría"}, {"name": "electronica completa sgv - con rampa", "stock": 1, "category": "Sin categoría"}, {"name": "emulador reset combustible - sgv", "stock": 8, "category": "Sin categoría"}, {"name": "emulador reset comb - axxis", "stock": 4, "category": "Sin categoría"}, {"name": "emulador obd can - sgv", "stock": 0, "category": "Sin categoría"}, {"name": "emulador obd 2 - aiv", "stock": 38, "category": "Sin categoría"}, {"name": "emulador sonda - sgv", "stock": 5, "category": "Sin categoría"}, {"name": "emulador 4 cil - sgv", "stock": 31, "category": "Sin categoría"}, {"name": "filtro pp", "stock": 61, "category": "Sin categoría"}, {"name": "emulador sonda monopunto - sgv", "stock": 0, "category": "Sin categoría"}, {"name": "goma amortiguacion * metro", "stock": 23, "category": "Sin categoría"}, {"name": "kit iny tesmon", "stock": 0, "category": "Sin categoría"}, {"name": "kit pp  - sgv", "stock": 0, "category": "Sin categoría"}, {"name": "mini kit pp - tesmon", "stock": 0, "category": "Sin categoría"}, {"name": "kit pp para 6 cilindros - tesmon", "stock": 1, "category": "Sin categoría"}, {"name": "kit pp para 6 cilindros - axxis", "stock": 1, "category": "Sin categoría"}, {"name": "llave carburada - sgv", "stock": 14, "category": "Sin categoría"}, {"name": "llave inyeccion - sgv", "stock": 46, "category": "Sin categoría"}, {"name": "manguera 11 mm x metro", "stock": 115, "category": "Sin categoría"}, {"name": "manguera 17 mm mallada x metro", "stock": 42, "category": "Sin categoría"}, {"name": "mangue 32 mm corrugada venteo x metro", "stock": 40, "category": "Sin categoría"}, {"name": "manguera 6 mm  x metro", "stock": 45, "category": "Sin categoría"}, {"name": "manguera 8 mm x metro", "stock": 110, "category": "Sin categoría"}, {"name": "manguera 5 mm x metro", "stock": 92, "category": "Sin categoría"}, {"name": "manometro axxis", "stock": 9, "category": "Sin categoría"}, {"name": "manometro sgv", "stock": 9, "category": "Sin categoría"}, {"name": "mezcladores - tecno", "stock": 36, "category": "Sin categoría"}, {"name": "mezcladores especiales - tecno", "stock": 5, "category": "Sin categoría"}, {"name": "mezcladores zico", "stock": 232, "category": "Sin categoría"}, {"name": "modulo llave - sgv", "stock": 23, "category": "Sin categoría"}, {"name": "modulo llave quinta - aeb", "stock": 3, "category": "Sin categoría"}, {"name": "modulo llave quinta -axxis", "stock": 9, "category": "Sin categoría"}, {"name": "niple corto", "stock": 86, "category": "Sin categoría"}, {"name": "niple largo", "stock": 3720, "category": "Sin categoría"}, {"name": "pico carga - tesmon", "stock": 5, "category": "Sin categoría"}, {"name": "pico inyector 10-12-14", "stock": 43, "category": "Sin categoría"}, {"name": "racord agua - reg", "stock": 18, "category": "Sin categoría"}, {"name": "rampa sgv", "stock": 47, "category": "Sin categoría"}, {"name": "rampa tesmon", "stock": 4, "category": "Sin categoría"}, {"name": "reductor agua 17-8", "stock": 82, "category": "Sin categoría"}, {"name": "t agua", "stock": 38, "category": "Sin categoría"}, {"name": "reductor glp - tesmon", "stock": 0, "category": "Sin categoría"}, {"name": "reductor pp - sgv", "stock": 27, "category": "Sin categoría"}, {"name": "reductor pp - axxis", "stock": 25, "category": "Sin categoría"}, {"name": "reductor pp - tesmon", "stock": 0, "category": "Sin categoría"}, {"name": "reductor tercera - tesmon", "stock": 9, "category": "Sin categoría"}, {"name": "reductor tercera- axxis", "stock": 25, "category": "Sin categoría"}, {"name": "reductor tercera potenciado  -tesmon", "stock": 1, "category": "Sin categoría"}, {"name": "registro alta simple", "stock": 25, "category": "Sin categoría"}, {"name": "registro y 1 registro", "stock": 107, "category": "Sin categoría"}, {"name": "registro y doble registro", "stock": 2, "category": "Sin categoría"}, {"name": "sensor map mp48 - aeb", "stock": 2, "category": "Sin categoría"}, {"name": "sensor map - sgv", "stock": 2, "category": "Sin categoría"}, {"name": "sensor map - axxis", "stock": 9, "category": "Sin categoría"}, {"name": "sensor temp rampa", "stock": 6, "category": "Sin categoría"}, {"name": "sensor temperatura", "stock": 33, "category": "Sin categoría"}, {"name": "sistema feedback - fbx5", "stock": 6, "category": "Sin categoría"}, {"name": "sporte rampa", "stock": 43, "category": "Sin categoría"}, {"name": "soporte valvula carga", "stock": 12, "category": "Sin categoría"}, {"name": "tapon ciego", "stock": 7, "category": "Sin categoría"}, {"name": "tapon ciego largo", "stock": 73, "category": "Sin categoría"}, {"name": "tapon plastico para cilindros", "stock": 600, "category": "Sin categoría"}, {"name": "tapon pico valvula de carga", "stock": 12, "category": "Sin categoría"}, {"name": "tee portamanometro", "stock": 43, "category": "Sin categoría"}, {"name": "valv corte electrico-doble venteo sgv", "stock": 379, "category": "Sin categoría"}, {"name": "valvula cde carga - sgv", "stock": 38, "category": "Sin categoría"}, {"name": "valvula de carga externa - jcr", "stock": 5, "category": "Sin categoría"}, {"name": "valvula de carga externa - rep nacional", "stock": 26, "category": "Sin categoría"}, {"name": "valvula de corte aereo - byh", "stock": 7, "category": "Sin categoría"}, {"name": "valvula de retencion rep nac", "stock": 53, "category": "Sin categoría"}, {"name": "variador avance - aiv", "stock": 0, "category": "Sin categoría"}, {"name": "variador avance 510- sgv", "stock": 4, "category": "Sin categoría"}, {"name": "variador avance 511 - sgv", "stock": 6, "category": "Sin categoría"}, {"name": "variador avance ws50 - sgv", "stock": 2, "category": "Sin categoría"}, {"name": "variador avance ws20 . Sgv", "stock": 8, "category": "Sin categoría"}, {"name": "virolas", "stock": 1530, "category": "Sin categoría"}, {"name": "zuncho largo - kevi", "stock": 27, "category": "Sin categoría"}, {"name": "thiner - x litro", "stock": 180, "category": "Sin categoría"}, {"name": "pintura x Litro", "stock": 210, "category": "Sin categoría"}, {"name": "granalla x kg", "stock": 350, "category": "Sin categoría"}, {"name": "bujias", "stock": 0, "category": "Sin categoría"}];
 
   function seedIfEmpty(){
+    if(CLOUD_ONLY) return;
     // si no hay productos guardados, cargamos el inventario incluido
     try{
       const existing = JSON.parse(localStorage.getItem(LS_PRODUCTS) || "[]");
@@ -818,9 +897,12 @@ function renderAll(){
   }
 
   function load(){
-    try{ products = JSON.parse(localStorage.getItem(LS_PRODUCTS) || "[]"); } catch{ products=[]; }
-    try{ moves = JSON.parse(localStorage.getItem(LS_MOVES) || "[]"); } catch{ moves=[]; }
-    try{ userCats = JSON.parse(localStorage.getItem(LS_CATS) || "[]"); } catch{ userCats=[]; }
+    if(CLOUD_ONLY){ products=[]; moves=[]; userCats=[]; }
+    else{
+      try{ products = JSON.parse(localStorage.getItem(LS_PRODUCTS) || "[]"); } catch{ products=[]; }
+      try{ moves = JSON.parse(localStorage.getItem(LS_MOVES) || "[]"); } catch{ moves=[]; }
+      try{ userCats = JSON.parse(localStorage.getItem(LS_CATS) || "[]"); } catch{ userCats=[]; }
+    }
     // sanitize
     products = Array.isArray(products) ? products : [];
     moves = Array.isArray(moves) ? moves : [];
@@ -830,9 +912,11 @@ function renderAll(){
     }
   }
   function save(){
-    localStorage.setItem(LS_PRODUCTS, JSON.stringify(products));
-    localStorage.setItem(LS_MOVES, JSON.stringify(moves));
-    localStorage.setItem(LS_CATS, JSON.stringify(userCats));
+    if(!CLOUD_ONLY){
+      localStorage.setItem(LS_PRODUCTS, JSON.stringify(products));
+      localStorage.setItem(LS_MOVES, JSON.stringify(moves));
+      localStorage.setItem(LS_CATS, JSON.stringify(userCats));
+    }
     // nube (RTDB)
     scheduleCloudSave();
   }
